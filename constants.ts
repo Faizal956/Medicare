@@ -1,0 +1,227 @@
+
+import { Language, Voice } from './types';
+
+export const AI_VOICES: Voice[] = [
+  { id: 'Kore', name: 'Kore', persona: 'Calm & Professional' },
+  { id: 'Puck', name: 'Puck', persona: 'Friendly & Bright' },
+  { id: 'Charon', name: 'Charon', persona: 'Clear & Formal' },
+  { id: 'Fenrir', name: 'Fenrir', persona: 'Deep & Reassuring' },
+  { id: 'Zephyr', name: 'Zephyr', persona: 'Gentle & Soft' }
+];
+
+export const LANGUAGES: Language[] = [
+  { code: 'en', name: 'English', nativeName: 'English', voiceName: 'Kore' },
+  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', voiceName: 'Fenrir' },
+  { code: 'mr', name: 'Marathi', nativeName: 'मराठी', voiceName: 'Zephyr' },
+  { code: 'te', name: 'Telugu', nativeName: 'తెలుగు', voiceName: 'Charon' },
+  { code: 'ta', name: 'Tamil', nativeName: 'தமிழ்', voiceName: 'Kore' },
+  { code: 'gu', name: 'Gujarati', nativeName: 'ગુજરાती', voiceName: 'Puck' },
+  { code: 'pa', name: 'Punjabi', nativeName: 'प़ंजाबी', voiceName: 'Fenrir' },
+  { code: 'es', name: 'Spanish', nativeName: 'Español', voiceName: 'Puck' },
+  { code: 'fr', name: 'French', nativeName: 'Français', voiceName: 'Zephyr' }
+];
+
+export const PROFILE_COLORS = [
+  'bg-blue-500', 'bg-purple-500', 'bg-emerald-500', 'bg-rose-500', 'bg-amber-500', 'bg-indigo-500'
+];
+
+export const UI_TRANSLATIONS: Record<string, any> = {
+  en: {
+    tagline: "AI-Powered Health Assistant",
+    subtitle: "Simplified medicine instructions for everyone.",
+    selectLanguage: "Select Language",
+    narratorVoice: "Narrator Voice",
+    bestFor: "Best for",
+    scanMedicine: "Scan Medicine",
+    scanDesc: "Tap to take a photo of your prescription or medicine strip.",
+    uploadPhoto: "Upload Photo",
+    readingMedicine: "Reading Medicine...",
+    readingDesc: "Gemini AI is analyzing the text and generating simplified audio instructions for you.",
+    dosage: "Dosage",
+    frequency: "Frequency",
+    instructions: "Instructions",
+    sideEffects: "Common Side Effects",
+    listenIn: "Listen in",
+    scanAnother: "Scan Another Medicine",
+    goBack: "Go Back",
+    tryNewPhoto: "Try New Photo",
+    voicePreviewHint: "Click the play button to hear a preview.",
+    recommendedHint: "Each language has a recommended voice, but you can choose any.",
+    warning: "Important: This assistant is powered by AI. Always verify dosage with your doctor. Do not rely solely on this app for critical decisions.",
+    tabScan: "Scan",
+    tabReminders: "Schedule",
+    tabPharmacies: "Nearby",
+    tabProfile: "Profile",
+    setAlarm: "Set Alarm",
+    noReminders: "No reminders set yet.",
+    findingPharmacies: "Finding nearby pharmacies...",
+    openInMaps: "Open in Maps",
+    remindersTitle: "Medication Schedule",
+    deleteReminder: "Delete",
+    nearbyPharmacies: "Nearby Pharmacies",
+    conflictDetected: "Danger: Medicine Interaction Detected!",
+    checkingInteractions: "Checking for drug interactions...",
+    addToMyMeds: "Add to My Medications",
+    myMedsTitle: "Current Medications",
+    addedToMeds: "Added to current list",
+    consultDoctor: "Consult your doctor before mixing these.",
+    safetyWarning: "Interaction Safety Alert",
+    profilesTitle: "User Profiles",
+    createProfile: "Create Profile",
+    switchUser: "Switch User",
+    whoIsUsing: "Who is using the app?",
+    profileName: "Profile Name",
+    saveProfile: "Save Profile",
+    active: "Active",
+    for: "for",
+    addMedsHint: "Add scanned medicines to check for interactions.",
+    tryAgain: "Try Again",
+    unclearImage: "Unclear Image",
+    processingError: "Processing Error",
+    interactionPulse: "Cross-referencing your medical history for safety.",
+    readingPulse: "Gemini AI is reading your medicine strip."
+  },
+  hi: {
+    tagline: "AI-संचालित स्वास्थ्य सहायक",
+    subtitle: "सभी के लिए सरल दवा निर्देश।",
+    selectLanguage: "भाषा चुनें",
+    narratorVoice: "आवाज चुनें",
+    bestFor: "सबसे अच्छा",
+    scanMedicine: "दवा स्कैन करें",
+    scanDesc: "अपने पर्चे या दवा की पट्टी की फोटो लेने के लिए टैप करें।",
+    uploadPhoto: "फोटो अपलोड करें",
+    readingMedicine: "दवा पढ़ी जा रही है...",
+    readingDesc: "जेमिनी एआई टेक्स्ट का विश्लेषण कर रहा है और आपके लिए सरल ऑडियो निर्देश तैयार कर रहा है।",
+    dosage: "खुराक",
+    frequency: "कितनी बार",
+    instructions: "निर्देश",
+    sideEffects: "सामान्य दुष्प्रभाव",
+    listenIn: "इसमें सुनें",
+    scanAnother: "दूसरी दवा स्कैन करें",
+    goBack: "वापस जाएं",
+    tryNewPhoto: "नई फोटो आज़माएं",
+    voicePreviewHint: "पूर्वावलोकन सुनने के लिए चलाएं बटन पर क्लिक करें।",
+    recommendedHint: "हर भाषा के लिए एक अनुशंसित आवाज़ है, लेकिन आप कोई भी चुन सकते हैं।",
+    warning: "महत्वपूर्ण: यह एआई द्वारा संचालित है। हमेशा अपने डॉक्टर से खुराक की पुष्टि करें।",
+    tabScan: "स्कैन",
+    tabReminders: "समय",
+    tabPharmacies: "नजदीकी",
+    tabProfile: "प्रोफ़ाइल",
+    setAlarm: "अलार्म सेट करें",
+    noReminders: "अभी तक कोई अलार्म सेट नहीं किया गया है।",
+    findingPharmacies: "नजदीकी दवा की दुकानें खोजी जा रही हैं...",
+    openInMaps: "मैप्स में खोलें",
+    remindersTitle: "मेरी दवा का समय",
+    deleteReminder: "हटाएं",
+    nearbyPharmacies: "नजदीकी दवा की दुकानें",
+    conflictDetected: "खतरा: दवाओं का आपस में बुरा असर हो सकता है!",
+    checkingInteractions: "दवाओं के आपसी असर की जांच हो रही है...",
+    addToMyMeds: "मेरी दवाओं में जोड़ें",
+    myMedsTitle: "मेरी वर्तमान दवाएं",
+    addedToMeds: "सूची में जोड़ा गया",
+    consultDoctor: "इन्हें मिलाने से पहले अपने डॉक्टर से सलाह लें।",
+    safetyWarning: "सुरक्षा चेतावनी",
+    profilesTitle: "यूज़र प्रोफ़ाइल",
+    createProfile: "प्रोफ़ाइल बनाएं",
+    switchUser: "यूज़र बदलें",
+    whoIsUsing: "ऐप का उपयोग कौन कर रहा है?",
+    profileName: "नाम",
+    saveProfile: "प्रोफ़ाइल सहेजें",
+    active: "सक्रिय",
+    for: "के लिए",
+    addMedsHint: "आपसी असर की जांच के लिए स्कैन की गई दवाएं यहां जोड़ें।",
+    tryAgain: "फिर से प्रयास करें",
+    unclearImage: "धुंधली फोटो",
+    processingError: "प्रोसेसिंग त्रुटि",
+    interactionPulse: "सुरक्षा के लिए आपके मेडिकल इतिहास की जांच की जा रही है।",
+    readingPulse: "जेमिनी एआई आपकी दवा की पट्टी पढ़ रहा है।"
+  },
+  mr: {
+    tagline: "AI-आधारित आरोग्य सहाय्यक",
+    subtitle: "सर्वांसाठी सोप्या औषध सूचना।",
+    selectLanguage: "भाषा निवडा",
+    narratorVoice: "आवाज निवडा",
+    bestFor: "सर्वोत्तम",
+    scanMedicine: "औषध स्कॅन करा",
+    scanDesc: "तुमच्या प्रिस्क्रिप्शनचा किंवा औषधाच्या पट्टीचा फोटो घेण्यासाठी टॅप करा।",
+    uploadPhoto: "फोटो अपलोड करा",
+    readingMedicine: "औषध वाचत आहे...",
+    readingDesc: "जेमिनी एआई मजकुराचे विश्लेषण करत आहे आणि तुमच्यासाठी सोप्या ऑडिओ सूचना तयार करत आहे।",
+    dosage: "डोस",
+    frequency: "वारंवारता",
+    instructions: "सूचना",
+    sideEffects: "सामान्य दुष्परिणाम",
+    listenIn: "मध्ये ऐका",
+    scanAnother: "दुसरे औषध स्कॅन करा",
+    goBack: "मागे जा",
+    tryNewPhoto: "नवीन फोटो वापरून पहा",
+    voicePreviewHint: "ऐकण्यासाठी प्ले बटण दाबा।",
+    recommendedHint: "प्रत्येक भाषेसाठी एक शिफारस केलेला आवाज आहे।",
+    warning: "महत्वाचे: हे एआय वर आधारित आहे। नेहमी तुमच्या डॉक्टरांचा सल्ला घ्या।",
+    tabScan: "स्कॅन",
+    tabReminders: "वेळ",
+    tabPharmacies: "नजीकचे",
+    tabProfile: "प्रोफाईल",
+    setAlarm: "अलार्म सेट करा",
+    noReminders: "अजून कोणतेही रिमाइंडर सेट केलेले नाही।",
+    findingPharmacies: "जवळपासची औषधालये शोधत आहे...",
+    openInMaps: "मॅप्समध्ये उघडा",
+    remindersTitle: "माझ्या औषधांचे वेळापत्रक",
+    deleteReminder: "काढून टाका",
+    nearbyPharmacies: "जवळपासची औषधालये",
+    conflictDetected: "धोका: औषधांचा एकमेकांवर वाईट परिणाम होऊ शकतो!",
+    checkingInteractions: "औषधांच्या परिणामांची तपासणी करत आहे...",
+    addToMyMeds: "माझ्या औषधांच्या यादीत जोडा",
+    myMedsTitle: "चालू औषधे",
+    addedToMeds: "यादीत जोडले गेले",
+    consultDoctor: "ही औषधे एकत्र घेण्यापूर्वी डॉक्टरांचा सल्ला घ्या।",
+    safetyWarning: "सुरक्षा सतर्कता",
+    profilesTitle: "वापरकर्ता प्रोफाईल्स",
+    createProfile: "प्रोफाईल तयार करा",
+    switchUser: "वापरकर्ता बदला",
+    whoIsUsing: "अ‍ॅप कोण वापरत आहे?",
+    profileName: "नाव",
+    saveProfile: "प्रोफाईल जतन करा",
+    active: "सक्रिय",
+    for: "साठी",
+    addMedsHint: "तपासणीसाठी स्कॅन केलेली औषधे येथे जोडा।",
+    tryAgain: "पुन्हा प्रयत्न करा",
+    unclearImage: "अस्पष्ट फोटो",
+    processingError: "त्रुटी",
+    interactionPulse: "सुरक्षेसाठी तुमच्या वैद्यकीय इतिहासाची तपासणी करत आहे।",
+    readingPulse: "जेमिनी एआय तुमची औषध पट्टी वाचत आहे।"
+  }
+};
+
+export const SYSTEM_INSTRUCTION = `
+You are a medical assistant for elderly and non-English speakers. 
+Your task is to analyze an image of a medicine strip or prescription.
+Extract the medicine name, dosage instructions, frequency, and common usage/purpose.
+Provide a clear, simplified explanation in the user's requested language.
+Avoid complex medical jargon. Ensure the tone is reassuring.
+
+Respond ONLY in the following JSON format:
+{
+  "name": "Medicine Name",
+  "dosage": "Amount per intake",
+  "frequency": "How many times a day/week",
+  "instructions": "Simple instructions like 'After food'",
+  "purpose": "What it is for",
+  "sideEffects": ["Simple side effect 1", "Simple side effect 2"],
+  "translatedText": "A natural sounding, complete paragraph in the requested language explaining everything above for audio readout."
+}
+`;
+
+export const INTERACTION_SYSTEM_INSTRUCTION = `
+You are a pharmacology expert. Given a NEW medicine and a LIST of medicines a patient is already taking, identify any potentially harmful drug-drug interactions.
+Provide a clear warning and explanation in the requested language.
+Severity should be 'high' if dangerous, 'moderate' if caution is needed, or 'none' if safe.
+
+Respond ONLY in the following JSON format:
+{
+  "hasConflict": boolean,
+  "severity": "high" | "moderate" | "none",
+  "explanation": "A simple localized explanation of why they conflict",
+  "recommendation": "Localized advice, like 'Do not take together' or 'Consult doctor'"
+}
+`;

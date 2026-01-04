@@ -1,0 +1,9 @@
+{
+  "name": "Medi-Remind",
+  "description": "A multilingual medicine assistant that scans prescriptions and explains dosages in local languages via audio for elderly and non-English speakers.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
