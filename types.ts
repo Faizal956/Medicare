@@ -32,6 +32,16 @@ export interface UserProfile {
   reminders: Reminder[];
 }
 
+export interface ScanHistoryEntry {
+  id: string;
+  profileId: string;
+  profileName: string;
+  medicineName: string;
+  analysis: MedicineAnalysis;
+  imagePath?: string;
+  scannedAt: number;
+}
+
 export interface Voice {
   id: string;
   name: string;
@@ -68,4 +78,5 @@ export enum AppState {
   ERROR = 'ERROR'
 }
 
-export type Tab = 'scan' | 'reminders' | 'pharmacies' | 'profile';
+export type Tab = 'scan' | 'reminders' | 'pharmacies' | 'profile' | 'history';
+

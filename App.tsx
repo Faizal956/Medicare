@@ -1,21 +1,29 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Camera, RefreshCw, Upload, Sparkles, AlertCircle, HelpCircle, WifiOff, Clock, Bell, MapPin, ScanLine, Trash2, Pill, ShieldAlert, User as UserIcon } from 'lucide-react';
+import { Camera, RefreshCw, Upload, Sparkles, AlertCircle, HelpCircle, WifiOff, Clock, Bell, MapPin, ScanLine, Trash2, Pill, ShieldAlert, User as UserIcon, LogOut, History } from 'lucide-react';
 import { AppState, Language, MedicineAnalysis, Voice, Tab, Reminder, InteractionResult, MedicineRecord, UserProfile } from './types';
 import { LANGUAGES, AI_VOICES, UI_TRANSLATIONS, PROFILE_COLORS } from './constants';
 import { GeminiService } from './services/geminiService';
+import { useAuth } from './contexts/AuthContext';
+import * as db from './services/supabaseService';
+import LoginPage from './components/LoginPage';
 import LanguageSelector from './components/LanguageSelector';
 import VoiceSelector from './components/VoiceSelector';
 import AnalysisResult from './components/AnalysisResult';
 import RemindersManager from './components/RemindersManager';
 import PharmacyLocator from './components/PharmacyLocator';
 import ProfileManager from './components/ProfileManager';
+import ScanHistory from './components/ScanHistory';
 
 const App: React.FC = () => {
+  const { user, loading: authLoading, logout } = useAuth();
+
   const [activeTab, setActiveTab] = useState<Tab>('scan');
   const [appState, setAppState] = useState<AppState>(AppState.IDLE);
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
+  const [scanHistory, setScanHistory] = useState<db.DbScanEntry[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
 
   const activeProfile = profiles.find(p => p.id === activeProfileId) || null;
 
@@ -24,30 +32,70 @@ const App: React.FC = () => {
   const [analysis, setAnalysis] = useState<MedicineAnalysis | null>(null);
   const [interactionResult, setInteractionResult] = useState<InteractionResult | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [capturedImageBase64, setCapturedImageBase64] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<{title: string, message: string, icon: React.ReactNode} | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const t = UI_TRANSLATIONS[selectedLanguage.code] || UI_TRANSLATIONS.en;
 
+  // =============================================
+  // LOAD DATA FROM SUPABASE
+  // =============================================
+
   useEffect(() => {
-    const savedProfiles = localStorage.getItem('medi_profiles_v2');
-    const lastActiveId = localStorage.getItem('medi_active_profile_id');
-    
-    if (savedProfiles) {
-      const parsed = JSON.parse(savedProfiles) as UserProfile[];
-      setProfiles(parsed);
-      
-      if (lastActiveId && parsed.find(p => p.id === lastActiveId)) {
-        setActiveProfileId(lastActiveId);
-      } else if (parsed.length > 0) {
-        setActiveProfileId(parsed[0].id);
-      } else {
-        setActiveTab('profile');
-      }
-    } else {
-      setActiveTab('profile');
+    if (!user) {
+      setProfiles([]);
+      setActiveProfileId(null);
+      setScanHistory([]);
+      setDataLoading(false);
+      return;
     }
-  }, []);
+
+    const loadData = async () => {
+      setDataLoading(true);
+      try {
+        // Load profiles with their medications and reminders
+        const dbProfiles = await db.getProfiles(user.id);
+        
+        const fullProfiles: UserProfile[] = await Promise.all(
+          dbProfiles.map(async (p) => {
+            const meds = await db.getMedications(p.id);
+            const rems = await db.getReminders(p.id);
+            return {
+              id: p.id,
+              name: p.name,
+              color: p.color,
+              preferredLanguageCode: p.preferred_language_code,
+              preferredVoiceId: p.preferred_voice_id,
+              medications: meds.map(m => ({ id: m.id, name: m.name, addedAt: new Date(m.added_at).getTime() })),
+              reminders: rems.map(r => ({ id: r.id, medicineName: r.medicine_name, dosage: r.dosage || '', time: r.time, active: r.active })),
+            };
+          })
+        );
+
+        setProfiles(fullProfiles);
+
+        const lastActiveId = localStorage.getItem('medi_active_profile_id');
+        if (lastActiveId && fullProfiles.find(p => p.id === lastActiveId)) {
+          setActiveProfileId(lastActiveId);
+        } else if (fullProfiles.length > 0) {
+          setActiveProfileId(fullProfiles[0].id);
+        } else {
+          setActiveTab('profile');
+        }
+
+        // Load scan history
+        const history = await db.getScanHistory(user.id);
+        setScanHistory(history);
+      } catch (err) {
+        console.error('Failed to load data:', err);
+      } finally {
+        setDataLoading(false);
+      }
+    };
+
+    loadData();
+  }, [user]);
 
   useEffect(() => {
     if (activeProfile) {
@@ -58,59 +106,72 @@ const App: React.FC = () => {
     }
   }, [activeProfileId]);
 
-  const updateProfilesAndPersist = (newProfiles: UserProfile[]) => {
-    setProfiles(newProfiles);
-    localStorage.setItem('medi_profiles_v2', JSON.stringify(newProfiles));
-  };
+  // =============================================
+  // PROFILE MANAGEMENT (Supabase)
+  // =============================================
 
-  const handleLanguageChange = (lang: Language) => {
+  const handleLanguageChange = async (lang: Language) => {
     setSelectedLanguage(lang);
-    if (activeProfile) {
-      const updated = profiles.map(p => 
-        p.id === activeProfileId ? { 
-          ...p, 
-          preferredLanguageCode: lang.code,
-          preferredVoiceId: lang.voiceName
-        } : p
-      );
-      updateProfilesAndPersist(updated);
+    if (activeProfile && user) {
+      try {
+        await db.updateProfile(activeProfile.id, {
+          preferred_language_code: lang.code,
+          preferred_voice_id: lang.voiceName,
+        });
+        setProfiles(prev => prev.map(p =>
+          p.id === activeProfileId ? { ...p, preferredLanguageCode: lang.code, preferredVoiceId: lang.voiceName } : p
+        ));
+      } catch (err) { console.error('Failed to update language:', err); }
     }
   };
 
-  const handleVoiceChange = (voice: Voice) => {
+  const handleVoiceChange = async (voice: Voice) => {
     setSelectedVoice(voice);
-    if (activeProfile) {
-      const updated = profiles.map(p => 
-        p.id === activeProfileId ? { ...p, preferredVoiceId: voice.id } : p
-      );
-      updateProfilesAndPersist(updated);
+    if (activeProfile && user) {
+      try {
+        await db.updateProfile(activeProfile.id, { preferred_voice_id: voice.id });
+        setProfiles(prev => prev.map(p =>
+          p.id === activeProfileId ? { ...p, preferredVoiceId: voice.id } : p
+        ));
+      } catch (err) { console.error('Failed to update voice:', err); }
     }
   };
 
-  const handleCreateProfile = (name: string, langCode: string) => {
-    const defaultVoiceId = LANGUAGES.find(l => l.code === langCode)?.voiceName || AI_VOICES[0].id;
-    const newProfile: UserProfile = {
-      id: Date.now().toString(),
-      name,
-      color: PROFILE_COLORS[profiles.length % PROFILE_COLORS.length],
-      preferredLanguageCode: langCode,
-      preferredVoiceId: defaultVoiceId,
-      medications: [],
-      reminders: []
-    };
-    const updated = [...profiles, newProfile];
-    updateProfilesAndPersist(updated);
-    setActiveProfileId(newProfile.id);
-    setActiveTab('scan');
+  const handleCreateProfile = async (name: string, langCode: string) => {
+    if (!user) return;
+    try {
+      const defaultVoiceId = LANGUAGES.find(l => l.code === langCode)?.voiceName || AI_VOICES[0].id;
+      const created = await db.saveProfile(user.id, {
+        name,
+        color: PROFILE_COLORS[profiles.length % PROFILE_COLORS.length],
+        preferredLanguageCode: langCode,
+        preferredVoiceId: defaultVoiceId,
+      });
+      const newProfile: UserProfile = {
+        id: created.id,
+        name: created.name,
+        color: created.color,
+        preferredLanguageCode: created.preferred_language_code,
+        preferredVoiceId: created.preferred_voice_id,
+        medications: [],
+        reminders: [],
+      };
+      setProfiles(prev => [...prev, newProfile]);
+      setActiveProfileId(newProfile.id);
+      setActiveTab('scan');
+    } catch (err) { console.error('Failed to create profile:', err); }
   };
 
-  const handleDeleteProfile = (id: string) => {
-    const updated = profiles.filter(p => p.id !== id);
-    updateProfilesAndPersist(updated);
-    if (activeProfileId === id) {
-      setActiveProfileId(updated.length > 0 ? updated[0].id : null);
-      if (updated.length === 0) setActiveTab('profile');
-    }
+  const handleDeleteProfile = async (id: string) => {
+    try {
+      await db.deleteProfile(id);
+      const updated = profiles.filter(p => p.id !== id);
+      setProfiles(updated);
+      if (activeProfileId === id) {
+        setActiveProfileId(updated.length > 0 ? updated[0].id : null);
+        if (updated.length === 0) setActiveTab('profile');
+      }
+    } catch (err) { console.error('Failed to delete profile:', err); }
   };
 
   const handleSwitchProfile = (id: string) => {
@@ -121,8 +182,12 @@ const App: React.FC = () => {
     setInteractionResult(null);
   };
 
+  // =============================================
+  // MEDICINE SCANNING (with Supabase persistence)
+  // =============================================
+
   const processImage = useCallback(async (base64: string) => {
-    if (!activeProfile) {
+    if (!activeProfile || !user) {
       setActiveTab('profile');
       return;
     }
@@ -158,6 +223,25 @@ const App: React.FC = () => {
       }
       
       setAppState(AppState.RESULT);
+
+      // Save scan to history (non-blocking)
+      try {
+        let imagePath: string | undefined;
+        if (capturedImageBase64) {
+          imagePath = await db.uploadMedicineImage(user.id, capturedImageBase64);
+        }
+        const entry = await db.saveScanEntry({
+          userId: user.id,
+          profileId: activeProfile.id,
+          profileName: activeProfile.name,
+          medicineName: medicineInfo.name,
+          analysis: medicineInfo,
+          imagePath,
+        });
+        setScanHistory(prev => [entry, ...prev]);
+      } catch (historyErr) {
+        console.error('Failed to save scan history:', historyErr);
+      }
     } catch (error: any) {
       console.error("Analysis Error:", error);
       setAppState(AppState.ERROR);
@@ -169,7 +253,7 @@ const App: React.FC = () => {
         icon: <AlertCircle size={32} /> 
       });
     }
-  }, [selectedLanguage, activeProfile, t]);
+  }, [selectedLanguage, activeProfile, t, user, capturedImageBase64]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -178,55 +262,72 @@ const App: React.FC = () => {
       reader.onloadend = () => {
         const base64 = (reader.result as string).split(',')[1];
         setCapturedImage(reader.result as string);
+        setCapturedImageBase64(base64);
         processImage(base64);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSetAlarm = (name: string, dosage: string) => {
+  // =============================================
+  // MEDICATIONS & REMINDERS (Supabase)
+  // =============================================
+
+  const handleSetAlarm = async (name: string, dosage: string) => {
     if (!activeProfile) return;
-    const newReminder: Reminder = {
-      id: Date.now().toString(),
-      medicineName: name,
-      dosage: dosage,
-      time: "09:00",
-      active: true
-    };
-    const updated = profiles.map(p => 
-      p.id === activeProfileId ? { ...p, reminders: [...p.reminders, newReminder] } : p
-    );
-    updateProfilesAndPersist(updated);
-    setActiveTab('reminders');
+    try {
+      const created = await db.addReminder(activeProfile.id, {
+        medicineName: name,
+        dosage,
+        time: "09:00",
+      });
+      const newReminder: Reminder = {
+        id: created.id,
+        medicineName: created.medicine_name,
+        dosage: created.dosage || '',
+        time: created.time,
+        active: created.active,
+      };
+      setProfiles(prev => prev.map(p =>
+        p.id === activeProfileId ? { ...p, reminders: [...p.reminders, newReminder] } : p
+      ));
+      setActiveTab('reminders');
+    } catch (err) { console.error('Failed to add reminder:', err); }
   };
 
-  const handleAddToMeds = (name: string) => {
+  const handleAddToMeds = async (name: string) => {
     if (!activeProfile) return;
     if (activeProfile.medications.some(m => m.name.toLowerCase() === name.toLowerCase())) return;
     
-    const newMed: MedicineRecord = {
-      id: Date.now().toString(),
-      name: name,
-      addedAt: Date.now()
-    };
-    const updated = profiles.map(p => 
-      p.id === activeProfileId ? { ...p, medications: [...p.medications, newMed] } : p
-    );
-    updateProfilesAndPersist(updated);
+    try {
+      const created = await db.addMedication(activeProfile.id, name);
+      const newMed: MedicineRecord = {
+        id: created.id,
+        name: created.name,
+        addedAt: new Date(created.added_at).getTime(),
+      };
+      setProfiles(prev => prev.map(p =>
+        p.id === activeProfileId ? { ...p, medications: [...p.medications, newMed] } : p
+      ));
+    } catch (err) { console.error('Failed to add medication:', err); }
   };
 
-  const removeMed = (id: string) => {
-    const updated = profiles.map(p => 
-      p.id === activeProfileId ? { ...p, medications: p.medications.filter(m => m.id !== id) } : p
-    );
-    updateProfilesAndPersist(updated);
+  const removeMed = async (id: string) => {
+    try {
+      await db.removeMedication(id);
+      setProfiles(prev => prev.map(p =>
+        p.id === activeProfileId ? { ...p, medications: p.medications.filter(m => m.id !== id) } : p
+      ));
+    } catch (err) { console.error('Failed to remove medication:', err); }
   };
 
-  const deleteReminder = (id: string) => {
-    const updated = profiles.map(p => 
-      p.id === activeProfileId ? { ...p, reminders: p.reminders.filter(r => r.id !== id) } : p
-    );
-    updateProfilesAndPersist(updated);
+  const deleteReminderHandler = async (id: string) => {
+    try {
+      await db.deleteReminder(id);
+      setProfiles(prev => prev.map(p =>
+        p.id === activeProfileId ? { ...p, reminders: p.reminders.filter(r => r.id !== id) } : p
+      ));
+    } catch (err) { console.error('Failed to delete reminder:', err); }
   };
 
   const resetApp = () => {
@@ -234,11 +335,50 @@ const App: React.FC = () => {
     setAnalysis(null);
     setInteractionResult(null);
     setCapturedImage(null);
+    setCapturedImageBase64(null);
   };
+
+  // =============================================
+  // AUTH GATE
+  // =============================================
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-slate-400 text-sm font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginPage t={t} />;
+  }
+
+  if (dataLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-slate-400 text-sm font-medium">Loading your data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center px-4 pt-8 pb-32 md:py-12 safe-area-inset">
       <header className="w-full max-w-lg mb-8 text-center transition-all select-none">
+        <div className="flex justify-end mb-2">
+          <button
+            onClick={logout}
+            className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-red-500 transition-colors px-3 py-1.5 rounded-full hover:bg-red-50"
+          >
+            <LogOut size={14} /> {t.logout}
+          </button>
+        </div>
         <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-bold mb-4">
           <Sparkles size={14} /> {t.tagline}
         </div>
@@ -372,12 +512,16 @@ const App: React.FC = () => {
                 </div>
               )}
             </div>
-            <RemindersManager reminders={activeProfile.reminders} onDelete={deleteReminder} t={t} />
+            <RemindersManager reminders={activeProfile.reminders} onDelete={deleteReminderHandler} t={t} />
           </div>
         )}
 
         {activeTab === 'pharmacies' && (
           <PharmacyLocator t={t} />
+        )}
+
+        {activeTab === 'history' && (
+          <ScanHistory scanHistory={scanHistory} t={t} />
         )}
 
         {activeTab === 'profile' && (
@@ -399,25 +543,26 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* Bottom Navigation: High Mobile Reachability */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-3 pb-safe-area flex justify-around items-center z-50 md:max-w-lg md:left-1/2 md:-translate-x-1/2 md:mb-6 md:rounded-3xl md:border md:shadow-xl">
+      {/* Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 px-2 py-3 pb-safe-area flex justify-around items-center z-50 md:max-w-lg md:left-1/2 md:-translate-x-1/2 md:mb-6 md:rounded-3xl md:border md:shadow-xl">
         {[
           { id: 'scan', icon: ScanLine, label: t.tabScan },
           { id: 'reminders', icon: Bell, label: t.tabReminders },
+          { id: 'history', icon: History, label: t.tabHistory },
           { id: 'pharmacies', icon: MapPin, label: t.tabPharmacies },
           { id: 'profile', icon: UserIcon, label: t.tabProfile }
         ].map((item) => (
           <button 
             key={item.id}
             onClick={() => setActiveTab(item.id as Tab)}
-            className={`flex flex-col items-center gap-1.5 p-2 px-4 rounded-2xl transition-all active:scale-90 ${
+            className={`flex flex-col items-center gap-1.5 p-2 px-3 rounded-2xl transition-all active:scale-90 ${
               activeTab === item.id 
                 ? 'text-blue-600 bg-blue-50/50' 
                 : 'text-slate-400'
             }`}
           >
-            <item.icon size={22} />
-            <span className="text-[10px] font-bold uppercase tracking-wider">{item.label}</span>
+            <item.icon size={20} />
+            <span className="text-[9px] font-bold uppercase tracking-wider">{item.label}</span>
           </button>
         ))}
       </nav>
